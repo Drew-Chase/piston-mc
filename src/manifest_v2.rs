@@ -29,7 +29,7 @@ pub struct Version {
     pub compliance_level: u8,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum ReleaseType {
     #[serde(rename = "release")]
     Release,
@@ -39,6 +39,17 @@ pub enum ReleaseType {
     OldBeta,
     #[serde(rename = "old_alpha")]
     OldAlpha,
+}
+
+impl std::fmt::Display for ReleaseType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ReleaseType::Release => write!(f, "Release"),
+            ReleaseType::Snapshot => write!(f, "Snapshot"),
+            ReleaseType::OldBeta => write!(f, "Old Beta"),
+            ReleaseType::OldAlpha => write!(f, "Old Alpha"),
+        }
+    }
 }
 
 impl ManifestV2 {
@@ -56,6 +67,10 @@ impl ManifestV2 {
             None => Ok(None),
         }
     }
+
+    pub fn releases(&self) -> Vec<Version> {
+        self.versions.iter().filter(|version| version.release_type == ReleaseType::Release).cloned().collect()
+    }
 }
 
 impl Version {
@@ -65,6 +80,7 @@ impl Version {
     }
 }
 
+#[cfg(test)]
 mod test {
 
     #[tokio::test]
