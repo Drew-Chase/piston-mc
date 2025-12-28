@@ -82,6 +82,7 @@ impl Version {
 
 #[cfg(test)]
 mod test {
+    use crate::setup_logging;
 
     #[tokio::test]
     async fn fetch_manifest() {
@@ -94,15 +95,20 @@ mod test {
     #[tokio::test]
     async fn version_manifest() {
         use crate::manifest_v2::ManifestV2;
+        use futures_util::stream::{self, StreamExt};
         setup_logging();
-        let manifest = ManifestV2::fetch().await.unwrap();
-        for version in manifest.versions {
-            let version = version.manifest().await;
-            assert!(version.is_ok());
-        }
-    }
 
-    fn setup_logging() {
-        pretty_env_logger::env_logger::builder().is_test(true).format_timestamp(None).filter_level(log::LevelFilter::Trace).init();
+        let manifest = ManifestV2::fetch().await.unwrap();
+        let results: Vec<_> = stream::iter(manifest.versions)
+            .map(|version| async move {
+                version.manifest().await
+            })
+            .buffer_unordered(64)
+            .collect()
+            .await;
+
+        for result in results {
+            assert!(result.is_ok());
+        }
     }
 }
