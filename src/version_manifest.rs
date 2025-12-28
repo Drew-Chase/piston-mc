@@ -186,4 +186,26 @@ impl VersionManifest {
 
         Ok(())
     }
+    pub async fn download_server(
+        &self,
+        path: impl AsRef<Path>,
+        validate: bool,
+        sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
+    ) -> Result<()> {
+        let path = path.as_ref();
+        if let Some(server) = &self.downloads.server {
+            let url = &server.url;
+            let hash = &server.sha1;
+
+            if validate {
+                download_and_validate_file(url, path, hash, sender).await?;
+            } else {
+                download_file(url, path, sender).await?;
+            }
+        } else {
+            return Err(anyhow!("No server download available"));
+        }
+
+        Ok(())
+    }
 }
