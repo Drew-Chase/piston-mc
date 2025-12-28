@@ -1,11 +1,9 @@
 use crate::download_util::{DownloadProgress, download_and_validate_file, download_file};
 use crate::manifest_v2::ReleaseType;
-use crate::sha_validation;
-use crate::sha_validation::SHAError;
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VersionManifest {
