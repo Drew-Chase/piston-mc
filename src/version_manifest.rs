@@ -1,9 +1,15 @@
+#[cfg(feature = "assets")]
 use crate::assets::Assets;
+#[cfg(feature = "downloads")]
 use crate::download_util::{download_and_validate_file, download_file, DownloadProgress};
 use crate::manifest_v2::ReleaseType;
-use anyhow::{anyhow, Result};
+#[cfg(feature = "downloads")]
+use anyhow::anyhow;
+#[cfg(any(feature = "downloads", feature = "assets"))]
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+#[cfg(feature = "downloads")]
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -135,6 +141,7 @@ pub struct LibraryDownload {
     pub artifact: Download,
 }
 
+#[cfg(feature = "downloads")]
 impl VersionManifest {
     pub async fn from_url(url: impl AsRef<str>) -> Result<Self> {
         let url = url.as_ref();
@@ -142,11 +149,12 @@ impl VersionManifest {
         let text = response.text().await?;
         let json_result = serde_json::from_str::<Self>(&text);
 
+        #[cfg(feature = "log")]
         if let Err(ref e) = json_result {
             let line = e.line();
             let column = e.column();
-            log::error!("Failed to deserialize VersionManifest from {}: {}", url, e);
-            log::error!("Error at line {}, column {}", line, column);
+            error!("Failed to deserialize VersionManifest from {}: {}", url, e);
+            error!("Error at line {}, column {}", line, column);
 
             // Show context around the error (60 chars before and after)
             let error_offset = text.lines().take(line - 1).map(|l| l.len() + 1).sum::<usize>() + column - 1;
@@ -154,8 +162,7 @@ impl VersionManifest {
             let end = (error_offset + 60).min(text.len());
             let context = &text[start..end];
 
-            log::error!("Context around error:");
-            log::error!("{}", context);
+            error!("Context around error: {}", context);
         }
 
         Ok(json_result?)
@@ -179,6 +186,7 @@ impl VersionManifest {
 
         Ok(())
     }
+
     pub async fn download_server(
         &self,
         path: impl AsRef<Path>,
@@ -201,19 +209,26 @@ impl VersionManifest {
 
         Ok(())
     }
+}
 
+#[cfg(feature = "assets")]
+impl VersionManifest {
     pub async fn assets(&self) -> Result<Assets> {
         Assets::from_url(&self.asset_index.url).await
     }
 }
 
 #[cfg(test)]
+#[cfg(feature = "downloads")]
 mod test {
+    #[cfg(feature = "log")]
     use crate::setup_logging;
+
     #[tokio::test]
     async fn download_server() {
         use crate::manifest_v2::ManifestV2;
         use crate::version_manifest::VersionManifest;
+        #[cfg(feature = "log")]
         setup_logging();
 
         let manifest = ManifestV2::fetch().await.expect("Failed to fetch assets.");
@@ -222,14 +237,16 @@ mod test {
         if let Ok(Some(version)) = version {
             let output = format!("target/test/server-{}.jar", release_id);
             version.download_server(output, true, None).await.unwrap();
-        }else{
+        } else {
             panic!("Failed to fetch version.");
         }
     }
+
     #[tokio::test]
     async fn download_client() {
         use crate::manifest_v2::ManifestV2;
         use crate::version_manifest::VersionManifest;
+        #[cfg(feature = "log")]
         setup_logging();
 
         let manifest = ManifestV2::fetch().await.expect("Failed to fetch assets.");
@@ -238,7 +255,7 @@ mod test {
         if let Ok(Some(version)) = version {
             let output = format!("target/test/client-{}.jar", release_id);
             version.download_client(output, true, None).await.unwrap();
-        }else{
+        } else {
             panic!("Failed to fetch version.");
         }
     }

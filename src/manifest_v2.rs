@@ -1,8 +1,10 @@
+#[cfg(feature = "downloads")]
 use crate::version_manifest::VersionManifest;
+#[cfg(feature = "downloads")]
 use anyhow::Result;
-use log::debug;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "downloads")]
 const PISTON_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -53,6 +55,7 @@ impl std::fmt::Display for ReleaseType {
 }
 
 impl ManifestV2 {
+    #[cfg(feature = "downloads")]
     pub async fn fetch() -> Result<ManifestV2> {
         debug!("Fetching versions manifest");
         let manifest = reqwest::get(PISTON_URL).await?.json::<Self>().await?;
@@ -60,6 +63,7 @@ impl ManifestV2 {
         Ok(manifest)
     }
 
+    #[cfg(feature = "downloads")]
     pub async fn version(&self, id: impl AsRef<str>) -> Result<Option<VersionManifest>> {
         let id = id.as_ref();
         match self.versions.iter().find(|version| version.id == id) {
@@ -73,6 +77,7 @@ impl ManifestV2 {
     }
 }
 
+#[cfg(feature = "downloads")]
 impl Version {
     pub async fn manifest(&self) -> Result<VersionManifest> {
         debug!("Getting manifest version: {}", self.id);
@@ -81,12 +86,15 @@ impl Version {
 }
 
 #[cfg(test)]
+#[cfg(feature = "downloads")]
 mod test {
+    #[cfg(feature = "log")]
     use crate::setup_logging;
 
     #[tokio::test]
     async fn fetch_manifest() {
         use crate::manifest_v2::ManifestV2;
+        #[cfg(feature = "log")]
         setup_logging();
         let manifest = ManifestV2::fetch().await.unwrap();
         assert!(!manifest.versions.is_empty());
@@ -96,16 +104,16 @@ mod test {
     async fn version_manifest() {
         use crate::manifest_v2::ManifestV2;
         use futures_util::stream::{self, StreamExt};
+        #[cfg(feature = "log")]
         setup_logging();
 
         let manifest = ManifestV2::fetch().await.unwrap();
-        let results: Vec<_> = stream::iter(manifest.versions)
-            .map(|version| async move {
-                version.manifest().await
-            })
-            .buffer_unordered(64)
-            .collect()
-            .await;
+        let results: Vec<_> =
+            stream::iter(manifest.versions)
+                .map(|version| async move { version.manifest().await })
+                .buffer_unordered(64)
+                .collect()
+                .await;
 
         for result in results {
             assert!(result.is_ok());

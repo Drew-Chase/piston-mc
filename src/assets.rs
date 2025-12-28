@@ -3,7 +3,6 @@ use crate::download_util::{FileDownloadArguments, MultiDownloadProgress, downloa
 use crate::sha_validation::validate_file;
 use anyhow::{Result, anyhow};
 use futures_util::stream::{self, StreamExt};
-use log::debug;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
