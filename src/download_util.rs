@@ -33,6 +33,9 @@ pub struct FileDownloadArguments {
 pub async fn download_file(url: impl AsRef<str>, path: impl AsRef<Path>, sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>) -> Result<()> {
     let url = url.as_ref();
     let path = path.as_ref();
+    if let Some(parent) = path.parent() {
+        tokio::fs::create_dir_all(parent).await?;
+    }
     let mut file = tokio::fs::File::create(path).await?;
 
     if let Some(sender) = sender {
