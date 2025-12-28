@@ -150,13 +150,7 @@ impl VersionManifest {
             log::error!("Error at line {}, column {}", line, column);
 
             // Show context around the error (60 chars before and after)
-            let error_offset = text
-                .lines()
-                .take(line - 1)
-                .map(|l| l.len() + 1)
-                .sum::<usize>()
-                + column
-                - 1;
+            let error_offset = text.lines().take(line - 1).map(|l| l.len() + 1).sum::<usize>() + column - 1;
             let start = error_offset.saturating_sub(60);
             let end = (error_offset + 60).min(text.len());
             let context = &text[start..end];

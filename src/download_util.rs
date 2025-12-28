@@ -1,6 +1,6 @@
 use crate::sha_validation;
 use crate::sha_validation::SHAError;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde::Serialize;
 use std::path::Path;
 use std::time::Instant;
@@ -13,7 +13,7 @@ pub struct DownloadProgress {
     pub bytes_per_second: usize,
 }
 
-pub struct MultiDownloadProgress{
+pub struct MultiDownloadProgress {
     pub bytes_to_download: usize,
     pub bytes_downloaded: usize,
     pub bytes_per_second: usize,
@@ -23,18 +23,14 @@ pub struct MultiDownloadProgress{
     pub file_names: Vec<String>,
 }
 
-pub struct FileDownloadArguments{
+pub struct FileDownloadArguments {
     pub url: String,
     pub sha1: Option<String>,
     pub path: String,
     pub sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
 }
 
-pub async fn download_file(
-    url: impl AsRef<str>,
-    path: impl AsRef<Path>,
-    sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
-) -> Result<()> {
+pub async fn download_file(url: impl AsRef<str>, path: impl AsRef<Path>, sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>) -> Result<()> {
     let url = url.as_ref();
     let path = path.as_ref();
     let mut file = tokio::fs::File::create(path).await?;
@@ -56,17 +52,9 @@ pub async fn download_file(
 
             downloaded += chunk.len();
             let elapsed = start_time.elapsed().as_secs_f64();
-            let bytes_per_second = if elapsed > 0.0 {
-                (downloaded as f64 / elapsed) as usize
-            } else {
-                0
-            };
+            let bytes_per_second = if elapsed > 0.0 { (downloaded as f64 / elapsed) as usize } else { 0 };
 
-            let progress = DownloadProgress {
-                bytes_to_download: total_size,
-                bytes_downloaded: downloaded,
-                bytes_per_second,
-            };
+            let progress = DownloadProgress { bytes_to_download: total_size, bytes_downloaded: downloaded, bytes_per_second };
 
             let _ = sender.send(progress).await;
         }
@@ -90,10 +78,7 @@ pub async fn download_and_validate_file(
 
     match sha_validation::validate_file(path, hash) {
         true => Ok(()),
-        false => Err(anyhow!(SHAError::FailedValidation(format!(
-            "Failed to validate file: {}",
-            path.display()
-        )))),
+        false => Err(anyhow!(SHAError::FailedValidation(format!("Failed to validate file: {}", path.display())))),
     }
 }
 
@@ -109,12 +94,7 @@ pub async fn download_multiple_files(
     let files_total = items.len();
     let file_names: Vec<String> = items
         .iter()
-        .map(|item| {
-            Path::new(&item.path)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| item.path.clone())
-        })
+        .map(|item| Path::new(&item.path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| item.path.clone()))
         .collect();
 
     struct ProgressState {
@@ -123,11 +103,8 @@ pub async fn download_multiple_files(
         file_names_downloaded: Vec<String>,
     }
 
-    let progress_state = Arc::new(Mutex::new(ProgressState {
-        file_progress: vec![(0, 0); files_total],
-        files_downloaded: 0,
-        file_names_downloaded: Vec::new(),
-    }));
+    let progress_state =
+        Arc::new(Mutex::new(ProgressState { file_progress: vec![(0, 0); files_total], files_downloaded: 0, file_names_downloaded: Vec::new() }));
 
     let start_time = Arc::new(Instant::now());
     let sender = sender.map(Arc::new);
@@ -146,8 +123,7 @@ pub async fn download_multiple_files(
                     tokio::fs::create_dir_all(parent).await?;
                 }
 
-                let (internal_tx, mut internal_rx) =
-                    tokio::sync::mpsc::channel::<DownloadProgress>(32);
+                let (internal_tx, mut internal_rx) = tokio::sync::mpsc::channel::<DownloadProgress>(32);
                 let original_sender = item.sender;
 
                 let progress_task = {
@@ -160,20 +136,13 @@ pub async fn download_multiple_files(
                         while let Some(progress) = internal_rx.recv().await {
                             {
                                 let mut state = progress_state.lock().await;
-                                state.file_progress[idx] =
-                                    (progress.bytes_to_download, progress.bytes_downloaded);
+                                state.file_progress[idx] = (progress.bytes_to_download, progress.bytes_downloaded);
 
-                                let total_bytes: usize =
-                                    state.file_progress.iter().map(|(t, _)| *t).sum();
-                                let downloaded_bytes: usize =
-                                    state.file_progress.iter().map(|(_, d)| *d).sum();
+                                let total_bytes: usize = state.file_progress.iter().map(|(t, _)| *t).sum();
+                                let downloaded_bytes: usize = state.file_progress.iter().map(|(_, d)| *d).sum();
 
                                 let elapsed = start_time.elapsed().as_secs_f64();
-                                let bytes_per_second = if elapsed > 0.0 {
-                                    (downloaded_bytes as f64 / elapsed) as usize
-                                } else {
-                                    0
-                                };
+                                let bytes_per_second = if elapsed > 0.0 { (downloaded_bytes as f64 / elapsed) as usize } else { 0 };
 
                                 if let Some(ref sender) = sender {
                                     let multi_progress = MultiDownloadProgress {
@@ -210,17 +179,11 @@ pub async fn download_multiple_files(
                     state.file_names_downloaded.push(file_names[idx].clone());
 
                     if let Some(ref sender) = sender {
-                        let total_bytes: usize =
-                            state.file_progress.iter().map(|(t, _)| *t).sum();
-                        let downloaded_bytes: usize =
-                            state.file_progress.iter().map(|(_, d)| *d).sum();
+                        let total_bytes: usize = state.file_progress.iter().map(|(t, _)| *t).sum();
+                        let downloaded_bytes: usize = state.file_progress.iter().map(|(_, d)| *d).sum();
 
                         let elapsed = start_time.elapsed().as_secs_f64();
-                        let bytes_per_second = if elapsed > 0.0 {
-                            (downloaded_bytes as f64 / elapsed) as usize
-                        } else {
-                            0
-                        };
+                        let bytes_per_second = if elapsed > 0.0 { (downloaded_bytes as f64 / elapsed) as usize } else { 0 };
 
                         let multi_progress = MultiDownloadProgress {
                             bytes_to_download: total_bytes,

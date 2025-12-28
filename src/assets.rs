@@ -27,23 +27,13 @@ impl Assets {
         debug!("Fetching versions manifest");
 
         let manifest = reqwest::get(url).await?.json::<serde_json::Value>().await?;
-        let objects = manifest
-            .get("objects")
-            .ok_or_else(|| anyhow!("missing `objects`"))?;
+        let objects = manifest.get("objects").ok_or_else(|| anyhow!("missing `objects`"))?;
         let objects: HashMap<String, AssetItem> = serde_json::from_value(objects.clone())?;
         debug!("Found {} versions in manifest", objects.len());
 
-        let id = url
-            .split("/")
-            .last()
-            .ok_or_else(|| anyhow!("invalid url"))?
-            .trim_end_matches(".json");
+        let id = url.split("/").last().ok_or_else(|| anyhow!("invalid url"))?.trim_end_matches(".json");
 
-        Ok(Assets {
-            asset_id: id.to_string(),
-            url: url.to_string(),
-            objects,
-        })
+        Ok(Assets { asset_id: id.to_string(), url: url.to_string(), objects })
     }
 
     pub async fn download(
@@ -56,10 +46,8 @@ impl Assets {
         if !directory.exists() {
             tokio::fs::create_dir_all(&directory).await?;
         }
-        let mut file =
-            tokio::fs::File::create(directory.join(format!("{}.json", self.asset_id))).await?;
-        file.write_all(serde_json::to_string(&self)?.as_bytes())
-            .await?;
+        let mut file = tokio::fs::File::create(directory.join(format!("{}.json", self.asset_id))).await?;
+        file.write_all(serde_json::to_string(&self)?.as_bytes()).await?;
 
         Ok(())
     }

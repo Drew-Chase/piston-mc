@@ -87,10 +87,6 @@ mod test {
     }
 
     fn setup_logging() {
-        pretty_env_logger::env_logger::builder()
-            .is_test(true)
-            .format_timestamp(None)
-            .filter_level(log::LevelFilter::Trace)
-            .init();
+        pretty_env_logger::env_logger::builder().is_test(true).format_timestamp(None).filter_level(log::LevelFilter::Trace).init();
     }
 }
