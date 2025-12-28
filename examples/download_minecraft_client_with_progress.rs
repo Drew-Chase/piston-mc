@@ -13,13 +13,15 @@ async fn main() {
 	if let Ok(Some(version)) = version {
 		// Define the output path for the downloaded client JAR file
 		let output = Path::new("target/examples/client-1.12.2.jar");
+		// If the downloader should attempt to validate the file using the file hash
+		let validate = true;
 
 		// Create a channel for receiving download progress updates
 		// Buffer size of 10 allows some backpressure handling
 		let (sender, mut receiver) = tokio::sync::mpsc::channel::<DownloadProgress>(10);
 
 		// Start the client download task with SHA1 validation enabled
-		let task = version.download_client(output, true, Some(sender));
+		let task = version.download_client(output, validate, Some(sender));
 
 		// Spawn a separate task to handle progress updates asynchronously
 		tokio::spawn(async move {
