@@ -1,10 +1,10 @@
-use crate::download_util::{DownloadProgress, download_and_validate_file, download_file};
+use crate::assets::Assets;
+use crate::download_util::{download_and_validate_file, download_file, DownloadProgress};
 use crate::manifest_v2::ReleaseType;
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
-use crate::assets::Assets;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VersionManifest {
@@ -202,8 +202,44 @@ impl VersionManifest {
         Ok(())
     }
 
-    pub async fn assets(&self)->Result<Assets>{
+    pub async fn assets(&self) -> Result<Assets> {
         Assets::from_url(&self.asset_index.url).await
     }
+}
 
+#[cfg(test)]
+mod test {
+    use crate::setup_logging;
+    #[tokio::test]
+    async fn download_server() {
+        use crate::manifest_v2::ManifestV2;
+        use crate::version_manifest::VersionManifest;
+        setup_logging();
+
+        let manifest = ManifestV2::fetch().await.expect("Failed to fetch assets.");
+        let release_id = &manifest.latest.release;
+        let version: anyhow::Result<Option<VersionManifest>> = manifest.version(release_id).await;
+        if let Ok(Some(version)) = version {
+            let output = format!("target/test/server-{}.jar", release_id);
+            version.download_server(output, true, None).await.unwrap();
+        }else{
+            panic!("Failed to fetch version.");
+        }
+    }
+    #[tokio::test]
+    async fn download_client() {
+        use crate::manifest_v2::ManifestV2;
+        use crate::version_manifest::VersionManifest;
+        setup_logging();
+
+        let manifest = ManifestV2::fetch().await.expect("Failed to fetch assets.");
+        let release_id = &manifest.latest.release;
+        let version: anyhow::Result<Option<VersionManifest>> = manifest.version(release_id).await;
+        if let Ok(Some(version)) = version {
+            let output = format!("target/test/client-{}.jar", release_id);
+            version.download_client(output, true, None).await.unwrap();
+        }else{
+            panic!("Failed to fetch version.");
+        }
+    }
 }
