@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/Home.md")]
+
 // Logging setup: use real log crate when feature enabled, otherwise use no-op stubs
 #[cfg(feature = "log")]
 #[macro_use]

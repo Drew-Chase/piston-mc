@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/DownloadUtil.md")]
+
 use crate::sha_validation;
 use crate::sha_validation::SHAError;
 use anyhow::{Result, anyhow};

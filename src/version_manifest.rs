@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/VersionManifest.md")]
+
 #[cfg(feature = "assets")]
 use crate::assets::Assets;
 #[cfg(feature = "downloads")]

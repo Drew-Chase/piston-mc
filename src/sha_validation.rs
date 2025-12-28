@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/ShaValidation.md")]
+
 use sha1::{Digest, Sha1};
 use std::fs::File;
 use std::io::{BufReader, Read};

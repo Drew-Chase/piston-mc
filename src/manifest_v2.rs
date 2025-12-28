@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/ManifestV2.md")]
+
 #[cfg(feature = "downloads")]
 use crate::version_manifest::VersionManifest;
 #[cfg(feature = "downloads")]

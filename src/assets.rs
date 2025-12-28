@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/Assets.md")]
+
 use crate::assets::AssetError::{AssetFailedToValidate, AssetNotFound};
 use crate::download_util::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files};
 use crate::sha_validation::validate_file;
