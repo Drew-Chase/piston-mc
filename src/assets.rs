@@ -21,6 +21,14 @@ pub struct AssetItem {
     pub size: u64,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum AssetError {
+    #[error("Asset '{name}' not found in path '{path}'")]
+    AssetNotFound { name: String, path: PathBuf },
+    #[error("Asset '{name}' is not valid in path '{path}'")]
+    AssetFailedToValidate { name: String, path: PathBuf },
+}
+
 impl Assets {
     pub async fn from_url(url: impl AsRef<str>) -> Result<Self> {
         let url = url.as_ref();
