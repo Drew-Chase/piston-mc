@@ -2,6 +2,12 @@
 name = "piston-mc"
 version = "0.0.1-alpha"
 edition = "2024"
+description = "A library for interacting with mojangs piston-mc api"
+authors = ["Drew Chase"]
+repository = "https://github.com/Drew-Chase/piston-mc.git"
+documentation = "https://github.com/Drew-Chase/piston-mc/wiki"
+categories = ["api-bindings", "network-programming", "games"]
+keywords = ["minecraft", "piston", "mc", "piston-mc", "java"]
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
@@ -19,3 +25,9 @@ futures-util = "0.3.31"
 [dev-dependencies]
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 pretty_env_logger = { version = "0.5.0" }
+
+
+[features]
+default = ["java", "assets"]
+java = []
+assets = []
