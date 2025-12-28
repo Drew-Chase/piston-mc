@@ -67,6 +67,7 @@ pub async fn download_file(url: impl AsRef<str>, path: impl AsRef<Path>, sender:
         file.write_all(bytes.iter().as_slice()).await?;
     }
 
+    file.flush().await?;
     Ok(())
 }
 
