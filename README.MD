@@ -23,4 +23,4 @@ cargo add piston-mc --git https://github.com/Drew-Chase/piston-mc.git
 ```
 
 ## Usage
-for usage information you can view the [examples](/examples) in the repository or the [wiki](/wiki).
+for usage information you can view the [examples](/examples) in the repository or the [wiki](https://github.com/Drew-Chase/piston-mc/wiki).
