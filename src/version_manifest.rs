@@ -4,6 +4,7 @@ use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
+use crate::assets::Assets;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VersionManifest {
@@ -200,4 +201,9 @@ impl VersionManifest {
 
         Ok(())
     }
+
+    pub async fn assets(&self)->Result<Assets>{
+        Assets::from_url(&self.asset_index.url).await
+    }
+
 }
