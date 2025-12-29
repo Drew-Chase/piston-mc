@@ -1,6 +1,9 @@
-use anyhow::Result;
+use crate::download_util::{download_multiple_files, FileDownloadArguments, MultiDownloadProgress};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::path::Path;
 
 const PISTON_URL: &str = "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
 
@@ -79,7 +82,7 @@ pub struct JavaInstallationFile {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Downloads {
-    pub lzma: DownloadItem,
+    pub lzma: Option<DownloadItem>,
     pub raw: DownloadItem,
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -127,8 +130,9 @@ impl JavaRuntime {
     pub async fn get_installation_files(&self) -> Result<Vec<JavaInstallationFile>> {
         let url = self.manifest.url.clone();
         let response = reqwest::get(&url).await?;
-        let text = response.text().await?;
-        let json_result = serde_json::from_str::<HashMap<String, JavaInstallationFile>>(&text);
+        let files: serde_json::Value = response.json().await?;
+        let files = files.get("files").ok_or_else(|| anyhow!("Missing 'files' field in response"))?;
+        let json_result = serde_json::from_value::<HashMap<String, JavaInstallationFile>>(files.clone());
         #[cfg(feature = "log")]
         if let Err(ref e) = json_result {
             let line = e.line();
@@ -144,6 +148,36 @@ impl JavaRuntime {
                 file
             })
             .collect())
+    }
+
+    pub async fn install(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<tokio::sync::mpsc::Sender<MultiDownloadProgress>>) -> Result<()> {
+        let directory = directory.as_ref();
+        let installation_files = self.get_installation_files().await?;
+
+        let args: Vec<FileDownloadArguments> = installation_files
+            .iter()
+            .filter_map(|item| {
+                item.downloads.as_ref().map(|download| FileDownloadArguments {
+                    url: download.raw.url.clone(),
+                    path: directory.join(&item.name).to_string_lossy().to_string(),
+                    sender: None,
+                    sha1: Some(download.raw.sha1.clone()),
+                })
+            })
+            .collect();
+
+        #[cfg(feature = "log")]
+        info!("Downloading files: {:?}", installation_files);
+
+        download_multiple_files(args, parallel, sender).await?;
+
+        Ok(())
+    }
+}
+
+impl Display for JavaRuntime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.version.name)
     }
 }
 
@@ -166,7 +200,6 @@ mod test {
         #[cfg(feature = "log")]
         setup_logging();
         let manifest = JavaManifest::fetch().await.unwrap();
-        info!("{:?}", manifest);
         let runtimes = [
             &manifest.linux.alpha,
             &manifest.linux.beta,
@@ -220,9 +253,23 @@ mod test {
         ];
 
         let results: Vec<_> = stream::iter(runtimes)
-            .map(|runtime_vec| {
+            .enumerate()
+            .map(|(idx, runtime_vec)| {
                 let runtime = runtime_vec.first();
-                async move { if let Some(runtime) = runtime { runtime.get_installation_files().await } else { Ok(vec![]) } }
+                async move {
+                    if let Some(runtime) = runtime {
+                        let files_result = runtime.get_installation_files().await;
+                        #[cfg(feature = "log")]
+                        if let Ok(ref files) = files_result {
+                            info!("Runtime {}: {} - found {} installation files", idx, runtime, files.len());
+                        }
+                        files_result
+                    } else {
+                        #[cfg(feature = "log")]
+                        info!("Runtime {}: empty runtime vector", idx);
+                        Ok(vec![])
+                    }
+                }
             })
             .buffer_unordered(10usize)
             .collect()
@@ -236,4 +283,84 @@ mod test {
             assert!(result.is_ok());
         }
     }
+
+    #[tokio::test]
+    async fn install(){
+        #[cfg(feature = "log")]
+        setup_logging();
+        let manifest = JavaManifest::fetch().await.unwrap();
+        let directory = "target/test/";
+        let runtimes = [
+            &manifest.linux.alpha,
+            &manifest.linux.beta,
+            &manifest.linux.gamma,
+            &manifest.linux.delta,
+            &manifest.linux.gamma_snapshot,
+            &manifest.linux.epsilon,
+            &manifest.linux.legacy,
+            &manifest.linux_i386.alpha,
+            &manifest.linux_i386.beta,
+            &manifest.linux_i386.gamma,
+            &manifest.linux_i386.delta,
+            &manifest.linux_i386.gamma_snapshot,
+            &manifest.linux_i386.epsilon,
+            &manifest.linux_i386.legacy,
+            &manifest.macos.alpha,
+            &manifest.macos.beta,
+            &manifest.macos.gamma,
+            &manifest.macos.delta,
+            &manifest.macos.gamma_snapshot,
+            &manifest.macos.epsilon,
+            &manifest.macos.legacy,
+            &manifest.macos_arm64.alpha,
+            &manifest.macos_arm64.beta,
+            &manifest.macos_arm64.gamma,
+            &manifest.macos_arm64.delta,
+            &manifest.macos_arm64.gamma_snapshot,
+            &manifest.macos_arm64.epsilon,
+            &manifest.macos_arm64.legacy,
+            &manifest.windows_arm64.alpha,
+            &manifest.windows_arm64.beta,
+            &manifest.windows_arm64.gamma,
+            &manifest.windows_arm64.delta,
+            &manifest.windows_arm64.gamma_snapshot,
+            &manifest.windows_arm64.epsilon,
+            &manifest.windows_arm64.legacy,
+            &manifest.windows_x64.alpha,
+            &manifest.windows_x64.beta,
+            &manifest.windows_x64.gamma,
+            &manifest.windows_x64.delta,
+            &manifest.windows_x64.gamma_snapshot,
+            &manifest.windows_x64.epsilon,
+            &manifest.windows_x64.legacy,
+            &manifest.windows_x86.alpha,
+            &manifest.windows_x86.beta,
+            &manifest.windows_x86.gamma,
+            &manifest.windows_x86.delta,
+            &manifest.windows_x86.gamma_snapshot,
+            &manifest.windows_x86.epsilon,
+            &manifest.windows_x86.legacy,
+        ];
+
+        let results: Vec<_> = stream::iter(runtimes)
+            .map(|runtime| async move {
+                if let Some(runtime) = runtime.first() {
+                    let directory = std::path::Path::new(directory).join(format!("{}-{}", runtime, runtime.manifest.sha1));
+                    info!("Installing java {} to {}...", runtime, directory.display());
+                    runtime.install(&directory, 100, None).await
+                } else {
+                    warn!("No runtime specified");
+                    Ok(())
+                }
+            })
+            .buffer_unordered(27)
+            .collect()
+            .await;
+
+        for result in results {
+            result.unwrap();
+        }
+
+    }
+
 }
