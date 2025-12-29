@@ -2,13 +2,14 @@
 A Rust library for interacting with the Minecraft game and its related services, such as asset downloading and version management.
 
 ## Features
-- Efficient asset downloading with progress tracking
-- Version manifest fetching and parsing
-- Minecraft version information retrieval
-- Easy integration with asynchronous Rust applications
-- Download Client and Server jars
-- Download Minecraft assets
-- Download java versions
+- **Version Manifest Fetching** - Query all Minecraft versions from Mojang's official API
+- **Client & Server Downloads** - Download Minecraft client and server JARs with progress tracking
+- **Asset Management** - Download and validate game assets (textures, sounds, etc.)
+- **Java Runtime Management** - Fetch and install Java runtimes for any platform
+- **SHA1 Validation** - Verify file integrity after downloads
+- **Parallel Downloads** - Configurable concurrent downloads for faster asset retrieval
+- **Progress Reporting** - Real-time download progress via async channels
+- **Async First** - Built on Tokio for easy integration with asynchronous Rust applications
 
 ## Installation
 You can install `piston-mc` from the git repostitory by adding this to the `Cargo.toml` file:
