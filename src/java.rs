@@ -29,21 +29,21 @@ pub struct JavaManifest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Runtimes {
     #[serde(rename = "java-runtime-alpha")]
-    alpha: Vec<JavaRuntime>,
+    pub alpha: Vec<JavaRuntime>,
     #[serde(rename = "java-runtime-beta")]
-    beta: Vec<JavaRuntime>,
+    pub beta: Vec<JavaRuntime>,
     #[serde(rename = "java-runtime-gamma")]
-    gamma: Vec<JavaRuntime>,
+    pub gamma: Vec<JavaRuntime>,
     #[serde(rename = "java-runtime-delta")]
-    delta: Vec<JavaRuntime>,
+    pub delta: Vec<JavaRuntime>,
     #[serde(rename = "java-runtime-gamma-snapshot")]
-    gamma_snapshot: Vec<JavaRuntime>,
+    pub gamma_snapshot: Vec<JavaRuntime>,
     #[serde(rename = "java-runtime-epsilon")]
-    epsilon: Vec<JavaRuntime>,
+    pub epsilon: Vec<JavaRuntime>,
     #[serde(rename = "jre-legacy")]
-    legacy: Vec<JavaRuntime>,
+    pub legacy: Vec<JavaRuntime>,
     #[serde(rename = "minecraft-java-exe")]
-    minecraft_java_exe: serde_json::Value,
+    pub minecraft_java_exe: serde_json::Value,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
