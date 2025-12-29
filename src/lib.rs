@@ -19,6 +19,18 @@ pub mod manifest_v2;
 pub mod sha_validation;
 pub mod version_manifest;
 
+#[cfg(feature = "news")]
+pub mod news;
+
+#[cfg(any(
+    feature = "patch-notes",
+    feature = "java-patch-notes",
+    feature = "bedrock-patch-notes",
+    feature = "dungeons-patch-notes",
+    feature = "launcher-patch-notes"
+))]
+pub mod patch_notes;
+
 #[cfg(test)]
 #[cfg(feature = "log")]
 pub(crate) fn setup_logging() {
