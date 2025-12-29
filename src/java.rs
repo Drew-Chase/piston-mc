@@ -1,3 +1,5 @@
+#![doc = include_str!("../.wiki/Java.md")]
+
 use crate::download_util::{download_multiple_files, FileDownloadArguments, MultiDownloadProgress};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
