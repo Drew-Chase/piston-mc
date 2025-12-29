@@ -25,6 +25,7 @@ pub struct MultiDownloadProgress {
     pub file_names: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct FileDownloadArguments {
     pub url: String,
     pub sha1: Option<String>,
