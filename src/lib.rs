@@ -18,10 +18,8 @@ pub mod java;
 pub mod manifest_v2;
 pub mod sha_validation;
 pub mod version_manifest;
-
 #[cfg(feature = "news")]
 pub mod news;
-
 #[cfg(any(
     feature = "patch-notes",
     feature = "java-patch-notes",
