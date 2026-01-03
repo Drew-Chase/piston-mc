@@ -1,4 +1,5 @@
-use piston_mc::{download_util::DownloadProgress, manifest_v2::ManifestV2, version_manifest::VersionManifest};
+use piston_mc::{manifest_v2::ManifestV2, version_manifest::VersionManifest};
+use simple_download_utility::DownloadProgress;
 use std::path::Path;
 
 #[tokio::main]

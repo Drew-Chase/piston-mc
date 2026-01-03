@@ -1,6 +1,6 @@
 #![doc = include_str!("../.wiki/Java.md")]
 
-use crate::download_util::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files};
+use simple_download_utility::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files};
 use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

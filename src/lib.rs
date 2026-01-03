@@ -11,8 +11,8 @@ mod log_stub;
 
 #[cfg(feature = "assets")]
 pub mod assets;
-#[cfg(feature = "downloads")]
-pub mod download_util;
+//#[cfg(feature = "downloads")]
+//pub mod download_util;
 #[cfg(feature = "java")]
 pub mod java;
 pub mod manifest_v2;

@@ -1,6 +1,6 @@
-use piston_mc::download_util::MultiDownloadProgress;
 use piston_mc::java::JavaManifest;
 use std::path::Path;
+use simple_download_utility::MultiDownloadProgress;
 
 #[tokio::main]
 async fn main() {

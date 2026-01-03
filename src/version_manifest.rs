@@ -3,7 +3,7 @@
 #[cfg(feature = "assets")]
 use crate::assets::Assets;
 #[cfg(feature = "downloads")]
-use crate::download_util::{DownloadProgress, download_and_validate_file, download_file};
+use simple_download_utility::{DownloadProgress, download_and_validate_file, download_file};
 use crate::manifest_v2::ReleaseType;
 #[cfg(any(feature = "downloads", feature = "assets"))]
 use anyhow::Result;

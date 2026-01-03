@@ -1,4 +1,4 @@
-use piston_mc::download_util::MultiDownloadProgress;
+use simple_download_utility::MultiDownloadProgress;
 use piston_mc::manifest_v2::ManifestV2;
 use piston_mc::version_manifest::VersionManifest;
 
