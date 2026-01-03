@@ -3,9 +3,7 @@ use piston_mc::patch_notes::java::JavaPatchNotes;
 #[tokio::main]
 async fn main() {
     // Fetch Java Edition patch notes from Mojang's API
-    let patch_notes = JavaPatchNotes::fetch()
-        .await
-        .expect("Failed to fetch Java patch notes");
+    let patch_notes = JavaPatchNotes::fetch().await.expect("Failed to fetch Java patch notes");
 
     println!("Total Java Edition patch notes: {}", patch_notes.entries.len());
 

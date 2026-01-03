@@ -1,7 +1,7 @@
 #![doc = include_str!("../.wiki/Java.md")]
 
-use crate::download_util::{download_multiple_files, FileDownloadArguments, MultiDownloadProgress};
-use anyhow::{anyhow, Result};
+use crate::download_util::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files};
+use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -152,7 +152,12 @@ impl JavaRuntime {
             .collect())
     }
 
-    pub async fn install(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<tokio::sync::mpsc::Sender<MultiDownloadProgress>>) -> Result<()> {
+    pub async fn install(
+        &self,
+        directory: impl AsRef<Path>,
+        parallel: u16,
+        sender: Option<tokio::sync::mpsc::Sender<MultiDownloadProgress>>,
+    ) -> Result<()> {
         let directory = directory.as_ref();
         let installation_files = self.get_installation_files().await?;
 
@@ -263,7 +268,7 @@ mod test {
                         let files_result = runtime.get_installation_files().await;
                         #[cfg(feature = "log")]
                         if let Ok(ref files) = files_result {
-                            info!("Runtime {}: {} - found {} installation files", idx, runtime, files.len());
+                            info!("Runtime {}: {} - found {} installation files", idx, runtime.version.name, files.len());
                         }
                         files_result
                     } else {
@@ -287,7 +292,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn install(){
+    async fn install() {
         #[cfg(feature = "log")]
         setup_logging();
         let manifest = JavaManifest::fetch().await.unwrap();
@@ -362,7 +367,5 @@ mod test {
         for result in results {
             result.unwrap();
         }
-
     }
-
 }

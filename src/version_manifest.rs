@@ -3,12 +3,12 @@
 #[cfg(feature = "assets")]
 use crate::assets::Assets;
 #[cfg(feature = "downloads")]
-use crate::download_util::{download_and_validate_file, download_file, DownloadProgress};
+use crate::download_util::{DownloadProgress, download_and_validate_file, download_file};
 use crate::manifest_v2::ReleaseType;
-#[cfg(feature = "downloads")]
-use anyhow::anyhow;
 #[cfg(any(feature = "downloads", feature = "assets"))]
 use anyhow::Result;
+#[cfg(feature = "downloads")]
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(feature = "downloads")]

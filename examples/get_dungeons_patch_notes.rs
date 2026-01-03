@@ -3,9 +3,7 @@ use piston_mc::patch_notes::dungeons::DungeonsPatchNotes;
 #[tokio::main]
 async fn main() {
     // Fetch Minecraft Dungeons patch notes from Mojang's API
-    let patch_notes = DungeonsPatchNotes::fetch()
-        .await
-        .expect("Failed to fetch Dungeons patch notes");
+    let patch_notes = DungeonsPatchNotes::fetch().await.expect("Failed to fetch Dungeons patch notes");
 
     println!("Total Minecraft Dungeons patch notes: {}", patch_notes.entries.len());
 

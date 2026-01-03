@@ -111,11 +111,7 @@ mod test {
 
         let manifest = ManifestV2::fetch().await.unwrap();
         let results: Vec<_> =
-            stream::iter(manifest.versions)
-                .map(|version| async move { version.manifest().await })
-                .buffer_unordered(64)
-                .collect()
-                .await;
+            stream::iter(manifest.versions).map(|version| async move { version.manifest().await }).buffer_unordered(64).collect().await;
 
         for result in results {
             assert!(result.is_ok());

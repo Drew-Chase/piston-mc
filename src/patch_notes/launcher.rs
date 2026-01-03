@@ -123,10 +123,6 @@ mod test {
         assert!(!first.id.is_empty());
         assert!(!first.date.is_empty());
         // At least one platform version should be present
-        assert!(
-            first.versions.windows.is_some()
-                || first.versions.osx.is_some()
-                || first.versions.linux.is_some()
-        );
+        assert!(first.versions.windows.is_some() || first.versions.osx.is_some() || first.versions.linux.is_some());
     }
 }

@@ -66,10 +66,7 @@ impl BedrockPatchNotes {
 
     /// Returns patch notes filtered by type (e.g., "retail", "beta").
     pub fn by_type(&self, patch_note_type: &str) -> Vec<&BedrockPatchEntry> {
-        self.entries
-            .iter()
-            .filter(|e| e.patch_note_type.as_deref() == Some(patch_note_type))
-            .collect()
+        self.entries.iter().filter(|e| e.patch_note_type.as_deref() == Some(patch_note_type)).collect()
     }
 
     /// Returns only retail (stable) patch notes.

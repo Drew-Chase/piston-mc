@@ -3,9 +3,7 @@ use piston_mc::patch_notes::bedrock::BedrockPatchNotes;
 #[tokio::main]
 async fn main() {
     // Fetch Bedrock Edition patch notes from Mojang's API
-    let patch_notes = BedrockPatchNotes::fetch()
-        .await
-        .expect("Failed to fetch Bedrock patch notes");
+    let patch_notes = BedrockPatchNotes::fetch().await.expect("Failed to fetch Bedrock patch notes");
 
     println!("Total Bedrock Edition patch notes: {}", patch_notes.entries.len());
 

@@ -67,10 +67,7 @@ impl JavaPatchNotes {
 
     /// Returns patch notes filtered by type (e.g., "release", "snapshot").
     pub fn by_type(&self, patch_type: &str) -> Vec<&JavaPatchEntry> {
-        self.entries
-            .iter()
-            .filter(|e| e.patch_type.as_deref() == Some(patch_type))
-            .collect()
+        self.entries.iter().filter(|e| e.patch_type.as_deref() == Some(patch_type)).collect()
     }
 
     /// Returns only release patch notes.

@@ -3,9 +3,7 @@ use piston_mc::patch_notes::launcher::LauncherPatchNotes;
 #[tokio::main]
 async fn main() {
     // Fetch Minecraft Launcher patch notes from Mojang's API
-    let patch_notes = LauncherPatchNotes::fetch()
-        .await
-        .expect("Failed to fetch Launcher patch notes");
+    let patch_notes = LauncherPatchNotes::fetch().await.expect("Failed to fetch Launcher patch notes");
 
     println!("Total Launcher patch notes: {}", patch_notes.entries.len());
 

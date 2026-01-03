@@ -16,8 +16,6 @@ pub mod download_util;
 #[cfg(feature = "java")]
 pub mod java;
 pub mod manifest_v2;
-pub mod sha_validation;
-pub mod version_manifest;
 #[cfg(feature = "news")]
 pub mod news;
 #[cfg(any(
@@ -28,6 +26,8 @@ pub mod news;
     feature = "launcher-patch-notes"
 ))]
 pub mod patch_notes;
+pub mod sha_validation;
+pub mod version_manifest;
 
 #[cfg(test)]
 #[cfg(feature = "log")]
