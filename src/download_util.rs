@@ -5,7 +5,8 @@ use crate::sha_validation::SHAError;
 use anyhow::{Result, anyhow};
 use serde::Serialize;
 use std::path::Path;
-use std::time::Instant;
+use std::thread;
+use std::time::{Duration, Instant};
 use tokio::io::AsyncWriteExt;
 
 #[derive(Debug, Serialize)]
@@ -81,12 +82,15 @@ pub async fn download_and_validate_file(
     sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
 ) -> Result<()> {
     let path = path.as_ref();
-    download_file(url, path, sender).await?;
+    let url = url.as_ref();
+    for _ in 0..=3 {
+        download_file(url, path, sender.clone()).await?;
 
-    match sha_validation::validate_file(path, hash) {
-        true => Ok(()),
-        false => Err(anyhow!(SHAError::FailedValidation(format!("Failed to validate file: {}", path.display())))),
+        if sha_validation::validate_file(path, &hash) {
+            return Ok(());
+        }
     }
+    Err(anyhow!(SHAError::FailedValidation(format!("Failed to validate file: {}", path.display()))))
 }
 
 pub async fn download_multiple_files(
