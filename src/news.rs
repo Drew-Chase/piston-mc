@@ -80,6 +80,7 @@ impl News {
 #[cfg(test)]
 mod test {
     use crate::news::News;
+    #[cfg(feature = "log")]
     use crate::setup_logging;
     #[tokio::test]
     async fn get_news() {
