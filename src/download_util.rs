@@ -2,11 +2,10 @@
 
 use crate::sha_validation;
 use crate::sha_validation::SHAError;
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde::Serialize;
 use std::path::Path;
-use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tokio::io::AsyncWriteExt;
 
 #[derive(Debug, Serialize)]
