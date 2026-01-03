@@ -349,7 +349,7 @@ mod test {
                 if let Some(runtime) = runtime.first() {
                     let directory = std::path::Path::new(directory).join(format!("{}-{}", runtime, runtime.manifest.sha1));
                     info!("Installing java {} to {}...", runtime, directory.display());
-                    runtime.install(&directory, 100, None).await
+                    runtime.install(&directory, 20, None).await
                 } else {
                     warn!("No runtime specified");
                     Ok(())
