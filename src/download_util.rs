@@ -2,11 +2,21 @@
 
 use crate::sha_validation;
 use crate::sha_validation::SHAError;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use serde::Serialize;
 use std::path::Path;
+use std::sync::LazyLock;
 use std::time::Instant;
 use tokio::io::AsyncWriteExt;
+
+static HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .pool_max_idle_per_host(20)
+        .pool_idle_timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_secs(300))
+        .build()
+        .expect("Failed to create HTTP client")
+});
 
 #[derive(Debug, Serialize)]
 pub struct DownloadProgress {
@@ -42,8 +52,7 @@ pub async fn download_file(url: impl AsRef<str>, path: impl AsRef<Path>, sender:
     let mut file = tokio::fs::File::create(path).await?;
 
     if let Some(sender) = sender {
-        let client = reqwest::Client::new();
-        let response = client.get(url).send().await?;
+        let response = HTTP_CLIENT.get(url).send().await?;
         let total_size = response.content_length().unwrap_or(0) as usize;
 
         let mut stream = response.bytes_stream();
@@ -82,8 +91,12 @@ pub async fn download_and_validate_file(
 ) -> Result<()> {
     let path = path.as_ref();
     let url = url.as_ref();
-    for _ in 0..=3 {
+    for i in 0..=3 {
+        if i != 0 {
+            warn!("Attempting to download file from {url} to {path:?}, attempt #{i}");
+        }
         download_file(url, path, sender.clone()).await?;
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         if sha_validation::validate_file(path, &hash) {
             return Ok(());
