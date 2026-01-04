@@ -34,7 +34,7 @@ pretty_env_logger = { version = "0.5.0" }
 default = ["java", "assets", "downloads"]
 java = []
 assets = ["downloads"]
-downloads = ["dep:simple_download_utility"]
+downloads = ["dep:simple_download_utility","dep:reqwest"]
 log = ["dep:log"]
 news = []
 java-patch-notes = ["dep:reqwest"]
