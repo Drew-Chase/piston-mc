@@ -84,12 +84,20 @@ impl Assets {
         sender: Option<tokio::sync::mpsc::Sender<MultiDownloadProgress>>,
     ) -> Result<()> {
         let directory = directory.as_ref();
-        if !directory.exists() {
-            tokio::fs::create_dir_all(&directory).await?;
-        }
+
+        // Create the indexes and objects subdirectories
+        let indexes_dir = directory.join("indexes");
+        let objects_dir = directory.join("objects");
+        tokio::fs::create_dir_all(&indexes_dir).await?;
+        tokio::fs::create_dir_all(&objects_dir).await?;
+
         self.path = Some(directory.to_path_buf());
-        let mut file = tokio::fs::File::create(directory.join(format!("{}.json", self.asset_id))).await?;
+
+        // Write the asset index JSON to indexes/{asset_id}.json
+        let mut file = tokio::fs::File::create(indexes_dir.join(format!("{}.json", self.asset_id))).await?;
         file.write_all(serde_json::to_string(&self)?.as_bytes()).await?;
+
+        // Download object files to objects/{hash[0:2]}/{hash}
         let download_items: Vec<FileDownloadArguments> = self
             .objects
             .values()
@@ -97,7 +105,7 @@ impl Assets {
                 url: item.get_download_url(),
                 sha1: Some(item.hash.clone()),
                 sender: None,
-                path: item.get_download_path(directory).to_string_lossy().into_owned(),
+                path: item.get_download_path(&objects_dir).to_string_lossy().into_owned(),
             })
             .collect();
 
@@ -108,13 +116,14 @@ impl Assets {
 
     pub async fn validate(&self, parallel: u16) -> Result<AssetValidationResult> {
         let path = self.path.as_ref().ok_or_else(|| anyhow!("Asset path was not set"))?;
+        let objects_dir = path.join("objects");
 
         let items: Vec<_> = self.objects.iter().map(|(name, item)| (name.clone(), item.clone())).collect();
 
         let results: Vec<_> = stream::iter(items)
             .map(|(name, item)| {
-                let path = path.clone();
-                tokio::task::spawn_blocking(move || (name, item.validate(&path)))
+                let objects_dir = objects_dir.clone();
+                tokio::task::spawn_blocking(move || (name, item.validate(&objects_dir)))
             })
             .buffer_unordered(parallel as usize)
             .collect()
