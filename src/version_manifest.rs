@@ -16,6 +16,7 @@ use simple_download_utility::{FileDownloadArguments, MultiDownloadProgress, down
 use std::collections::HashMap;
 #[cfg(feature = "downloads")]
 use std::path::Path;
+use std::path::PathBuf;
 use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -244,20 +245,24 @@ impl VersionManifest {
 }
 
 pub trait LibraryItemDownloader {
-    fn download(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<Sender<MultiDownloadProgress>>)
-    -> impl Future<Output = Result<()>>;
+    fn download(
+        &self,
+        directory: impl AsRef<Path>,
+        parallel: u16,
+        sender: Option<Sender<MultiDownloadProgress>>,
+    ) -> impl Future<Output = Result<Vec<PathBuf>>>;
     fn download_with_client(
         &self,
         client: &Client,
         directory: impl AsRef<Path>,
         parallel: u16,
         sender: Option<Sender<MultiDownloadProgress>>,
-    ) -> impl Future<Output = Result<()>>;
+    ) -> impl Future<Output = Result<Vec<PathBuf>>>;
 }
 
 #[cfg(feature = "downloads")]
 impl LibraryItemDownloader for Vec<LibraryItem> {
-    async fn download(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<Sender<MultiDownloadProgress>>) -> Result<()> {
+    async fn download(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<Sender<MultiDownloadProgress>>) -> Result<Vec<PathBuf>> {
         let client = Client::new();
         self.download_with_client(&client, directory, parallel, sender).await
     }
@@ -268,7 +273,7 @@ impl LibraryItemDownloader for Vec<LibraryItem> {
         directory: impl AsRef<Path>,
         parallel: u16,
         sender: Option<Sender<MultiDownloadProgress>>,
-    ) -> Result<()> {
+    ) -> Result<Vec<PathBuf>> {
         let directory = directory.as_ref();
         if !directory.exists() {
             tokio::fs::create_dir_all(&directory).await?;
@@ -345,11 +350,13 @@ impl LibraryItemDownloader for Vec<LibraryItem> {
             })
             .collect();
 
+        let files = download_items.iter().map(|item| PathBuf::from(item.path.clone())).collect();
+
         if let Err(e) = download_multiple_files_with_client(client, download_items, parallel, sender).await {
             bail!("Download failed: {}", e);
         }
 
-        Ok(())
+        Ok(files)
     }
 }
 
