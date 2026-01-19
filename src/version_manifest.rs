@@ -12,7 +12,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "downloads")]
 use simple_download_utility::{DownloadProgress, download_and_validate_file, download_file};
-use simple_download_utility::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files, download_multiple_files_with_client};
+use simple_download_utility::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files_with_client};
 use std::collections::HashMap;
 #[cfg(feature = "downloads")]
 use std::path::Path;
