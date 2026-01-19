@@ -44,11 +44,6 @@ pub struct VersionManifest {
     pub libraries: Vec<LibraryItem>,
 }
 
-//#[derive(Serialize, Deserialize, Clone, Debug)]
-//pub struct Libraries{
-//    pub records: Vec<LibraryItem>
-//}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
 pub enum Arguments {
@@ -205,7 +200,7 @@ impl VersionManifest {
         &self,
         path: impl AsRef<Path>,
         validate: bool,
-        sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
+        sender: Option<Sender<DownloadProgress>>,
     ) -> Result<()> {
         let path = path.as_ref();
         let url = &self.downloads.client.url;
@@ -224,7 +219,7 @@ impl VersionManifest {
         &self,
         path: impl AsRef<Path>,
         validate: bool,
-        sender: Option<tokio::sync::mpsc::Sender<DownloadProgress>>,
+        sender: Option<Sender<DownloadProgress>>,
     ) -> Result<()> {
         let path = path.as_ref();
         if let Some(server) = &self.downloads.server {
