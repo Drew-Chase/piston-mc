@@ -4,6 +4,7 @@ A Rust library for interacting with the Minecraft game and its related services,
 ## Features
 - **Version Manifest Fetching** - Query all Minecraft versions from Mojang's official API
 - **Client & Server Downloads** - Download Minecraft client and server JARs with progress tracking
+- **Library Downloads** - Download game libraries including platform-specific native libraries
 - **Asset Management** - Download and validate game assets (textures, sounds, etc.)
 - **Java Runtime Management** - Fetch and install Java runtimes for any platform
 - **Patch Notes** - Fetch patch notes for Java Edition, Bedrock Edition, Dungeons, and Launcher
