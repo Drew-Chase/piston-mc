@@ -2,17 +2,21 @@
 
 #[cfg(feature = "assets")]
 use crate::assets::Assets;
-#[cfg(feature = "downloads")]
-use simple_download_utility::{DownloadProgress, download_and_validate_file, download_file};
 use crate::manifest_v2::ReleaseType;
 #[cfg(any(feature = "downloads", feature = "assets"))]
 use anyhow::Result;
 #[cfg(feature = "downloads")]
 use anyhow::anyhow;
+use anyhow::bail;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "downloads")]
+use simple_download_utility::{DownloadProgress, download_and_validate_file, download_file};
+use simple_download_utility::{FileDownloadArguments, MultiDownloadProgress, download_multiple_files, download_multiple_files_with_client};
 use std::collections::HashMap;
 #[cfg(feature = "downloads")]
 use std::path::Path;
+use tokio::sync::mpsc::Sender;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VersionManifest {
@@ -36,7 +40,13 @@ pub struct VersionManifest {
     pub downloads: Downloads,
     #[serde(rename = "javaVersion")]
     pub java_version: Option<JavaVersion>,
+    pub libraries: Vec<LibraryItem>,
 }
+
+//#[derive(Serialize, Deserialize, Clone, Debug)]
+//pub struct Libraries{
+//    pub records: Vec<LibraryItem>
+//}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(untagged)]
@@ -88,6 +98,8 @@ pub struct Rule {
 pub struct OsRule {
     pub name: Option<String>,
     pub arch: Option<String>,
+    /// Regex pattern for OS version matching (used in older versions)
+    pub version: Option<String>,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AssetIndex {
@@ -136,11 +148,29 @@ pub struct LibraryItem {
     pub downloads: LibraryDownload,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rules: Option<Vec<Rule>>,
+    /// Native library mappings (OS name -> classifier key)
+    /// Used for platform-specific native libraries
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub natives: Option<HashMap<String, String>>,
+    /// Extraction rules for native libraries
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extract: Option<ExtractRules>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ExtractRules {
+    /// Paths to exclude when extracting (e.g., ["META-INF/"])
+    pub exclude: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LibraryDownload {
-    pub name: String,
-    pub artifact: Download,
+    /// Main artifact download (may be absent for native-only libraries)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub artifact: Option<Download>,
+    /// Platform-specific native classifiers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub classifiers: Option<HashMap<String, Download>>,
 }
 
 #[cfg(feature = "downloads")]
@@ -213,6 +243,116 @@ impl VersionManifest {
     }
 }
 
+pub trait LibraryItemDownloader {
+    fn download(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<Sender<MultiDownloadProgress>>)
+    -> impl Future<Output = Result<()>>;
+    fn download_with_client(
+        &self,
+        client: &Client,
+        directory: impl AsRef<Path>,
+        parallel: u16,
+        sender: Option<Sender<MultiDownloadProgress>>,
+    ) -> impl Future<Output = Result<()>>;
+}
+
+#[cfg(feature = "downloads")]
+impl LibraryItemDownloader for Vec<LibraryItem> {
+    async fn download(&self, directory: impl AsRef<Path>, parallel: u16, sender: Option<Sender<MultiDownloadProgress>>) -> Result<()> {
+        let client = Client::new();
+        self.download_with_client(&client, directory, parallel, sender).await
+    }
+
+    async fn download_with_client(
+        &self,
+        client: &Client,
+        directory: impl AsRef<Path>,
+        parallel: u16,
+        sender: Option<Sender<MultiDownloadProgress>>,
+    ) -> Result<()> {
+        let directory = directory.as_ref();
+        if !directory.exists() {
+            tokio::fs::create_dir_all(&directory).await?;
+        }
+
+        let download_items: Vec<FileDownloadArguments> = self
+            .iter()
+            .filter_map(|item| {
+                let classifiers = item.downloads.classifiers.clone();
+                let artifact = item.downloads.artifact.clone();
+
+                let url: String = if let Some(classifiers) = &classifiers {
+                    #[cfg(target_os = "windows")]
+                    let name = "natives-windows";
+                    #[cfg(target_os = "linux")]
+                    let name = "natives-linux";
+                    #[cfg(target_os = "macos")]
+                    let name = "natives-osx";
+
+                    if let Some(native) = classifiers.get(name) {
+                        native.url.clone()
+                    } else {
+                        return None;
+                    }
+                } else if let Some(artifact) = &artifact {
+                    artifact.url.clone()
+                } else {
+                    return None;
+                };
+
+                let sha: String = if let Some(classifiers) = &classifiers {
+                    #[cfg(target_os = "windows")]
+                    let name = "natives-windows";
+                    #[cfg(target_os = "linux")]
+                    let name = "natives-linux";
+                    #[cfg(target_os = "macos")]
+                    let name = "natives-osx";
+
+                    if let Some(native) = classifiers.get(name) {
+                        native.sha1.clone()
+                    } else {
+                        return None;
+                    }
+                } else if let Some(artifact) = &artifact {
+                    artifact.sha1.clone()
+                } else {
+                    return None;
+                };
+
+                let path: String = if let Some(classifiers) = classifiers {
+                    #[cfg(target_os = "windows")]
+                    let name = "natives-windows";
+                    #[cfg(target_os = "linux")]
+                    let name = "natives-linux";
+                    #[cfg(target_os = "macos")]
+                    let name = "natives-osx";
+
+                    if let Some(native) = classifiers.get(name)
+                        && let Some(path) = &native.id
+                    {
+                        path.clone()
+                    } else {
+                        return None;
+                    }
+                } else if let Some(artifact) = artifact
+                    && let Some(path) = artifact.id
+                {
+                    path.clone()
+                } else {
+                    return None;
+                };
+
+                Some(FileDownloadArguments { url, sha1: Some(sha), sender: None, path: directory.join(path).to_string_lossy().to_string() })
+            })
+            .collect();
+
+        if let Err(e) = download_multiple_files_with_client(client, download_items, parallel, sender).await {
+            bail!("Download failed: {}", e);
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(feature = "assets")]
 impl VersionManifest {
     pub async fn assets(&self) -> Result<Assets> {
@@ -223,8 +363,41 @@ impl VersionManifest {
 #[cfg(test)]
 #[cfg(feature = "downloads")]
 mod test {
+    use crate::manifest_v2::ManifestV2;
     #[cfg(feature = "log")]
     use crate::setup_logging;
+    use futures_util::{StreamExt, stream};
+
+    #[tokio::test]
+    async fn download_libraries() {
+        use crate::version_manifest::LibraryItemDownloader;
+        #[cfg(feature = "log")]
+        setup_logging();
+        let manifest = ManifestV2::fetch().await.unwrap();
+        let client = reqwest::Client::new();
+        let client = std::sync::Arc::new(client);
+        let results: Vec<anyhow::Result<()>> = stream::iter(manifest.versions)
+            .map(|version| {
+                let client = std::sync::Arc::clone(&client);
+                async move {
+                    let manifest = version.manifest().await?;
+                    info!("Downloading libraries for minecraft {}", version.id);
+                    manifest
+                        .libraries
+                        .download_with_client(&client, format!("target/tests/download_libraries/{}", version.id), 150, None)
+                        .await
+                        .unwrap_or_else(|e| panic!("Failed to download libraries for minecraft version {} - {}", version.id, e));
+                    Ok(())
+                }
+            })
+            .buffer_unordered(2)
+            .collect()
+            .await;
+
+        for result in results {
+            assert!(result.is_ok());
+        }
+    }
 
     #[tokio::test]
     async fn download_server() {
