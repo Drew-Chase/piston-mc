@@ -48,9 +48,9 @@ pub struct Runtimes {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JavaRuntime {
-    version: Version,
-    manifest: Manifest,
-    availability: Availability,
+    pub version: Version,
+    pub manifest: Manifest,
+    pub availability: Availability,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
